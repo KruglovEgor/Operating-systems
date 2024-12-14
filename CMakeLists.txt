@@ -6,7 +6,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_compile_options(/EHsc)
 
-add_executable(osi_1 src/Main.cpp)
+add_executable(osi_1 src/Main.cpp
+        src/CommandExecutor.cpp
+        src/CommandExecutor.h
+        src/Shell.cpp
+        src/Shell.h)
+
 add_executable(io-thpt-write src/Benchmarks/IoThptWrite.cpp)
 add_executable(sort src/Benchmarks/Sort.cpp)
 
