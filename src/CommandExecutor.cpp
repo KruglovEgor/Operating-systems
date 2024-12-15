@@ -8,83 +8,7 @@
 #include <iostream>
 
 
-// Типы и структуры для NtCreateUserProcess
-typedef struct _PS_CREATE_INFO {
-    SIZE_T Size;
-    ULONG State;
-    union {
-        struct {
-            HANDLE FileHandle;
-            HANDLE SectionHandle;
-            ULONGLONG UserProcessParametersNative;
-            ULONG Flags;
-        } InitState;
-        struct {
-            HANDLE FileHandle;
-            HANDLE SectionHandle;
-            ULONGLONG UserProcessParametersNative;
-            ULONG Flags;
-        } FailState;
-    };
-} PS_CREATE_INFO, *PPS_CREATE_INFO;
 
-typedef struct _PS_ATTRIBUTE {
-    ULONG Attribute;
-    SIZE_T Size;
-    union {
-        ULONG_PTR Value;
-        PVOID ValuePtr;
-    };
-    PSIZE_T ReturnLength;
-} PS_ATTRIBUTE, *PPS_ATTRIBUTE;
-
-typedef struct _PS_ATTRIBUTE_LIST {
-    SIZE_T TotalLength;
-    PS_ATTRIBUTE Attributes[1];
-} PS_ATTRIBUTE_LIST, *PPS_ATTRIBUTE_LIST;
-
-// Константы для процесс-параметров
-#define RTL_USER_PROC_PARAMS_NORMALIZED 0x20
-
-// Объявляем функции из NTDLL
-extern "C" {
-NTSYSAPI NTSTATUS NTAPI RtlCreateProcessParametersEx(
-        PVOID *pProcessParameters,
-        PUNICODE_STRING ImagePathName,
-        PUNICODE_STRING DllPath,
-        PUNICODE_STRING CurrentDirectory,
-        PUNICODE_STRING CommandLine,
-        PVOID Environment,
-        PUNICODE_STRING WindowTitle,
-        PUNICODE_STRING DesktopInfo,
-        PUNICODE_STRING ShellInfo,
-        PUNICODE_STRING RuntimeData,
-        ULONG Flags
-);
-
-}
-
-extern "C" {
-NTSYSAPI BOOLEAN NTAPI RtlFreeHeap(
-        HANDLE HeapHandle,
-        ULONG Flags,
-        PVOID BaseAddress
-);
-}
-
-extern "C" NTSTATUS NtCreateUserProcess(
-        PHANDLE ProcessHandle,
-        PHANDLE ThreadHandle,
-        ACCESS_MASK ProcessDesiredAccess,
-        ACCESS_MASK ThreadDesiredAccess,
-        POBJECT_ATTRIBUTES ProcessObjectAttributes,
-        POBJECT_ATTRIBUTES ThreadObjectAttributes,
-        ULONG ProcessFlags,
-        ULONG ThreadFlags,
-        PVOID ProcessParameters,
-        PVOID CreateInfo,
-        PVOID AttributeList
-);
 
 void RtlInitUnicodeString(PUNICODE_STRING DestinationString, PCWSTR SourceString) {
     if (DestinationString != nullptr) {
@@ -130,61 +54,40 @@ std::string CommandExecutor::resolveFullPath(const std::string &command) {
     return "";
 }
 
-void CommandExecutor::launchProcess(const std::wstring& fullPath, const std::wstring& commandLine) {
-    std::wcout << L"Launching process:\n";
-    std::wcout << L"Executable Path: " << fullPath << L"\n";
-    std::wcout << L"Command Line: " << commandLine << L"\n";
+void CommandExecutor::launchProcess(const std::wstring &fullPath, const std::wstring &commandLine) {
+    // Инициализация структуры для CreateProcess
+    STARTUPINFOW startupInfo = { sizeof(startupInfo) };
+    PROCESS_INFORMATION processInfo;
 
-    HANDLE processHandle = nullptr;
-    HANDLE threadHandle = nullptr;
 
-    UNICODE_STRING imagePath, commandLineUS;
-    RtlInitUnicodeString(&imagePath, fullPath.c_str());
-    RtlInitUnicodeString(&commandLineUS, commandLine.c_str());
+    std::wcout << L"Launching process with command: " << commandLine << std::endl;
 
-    PVOID processParameters = nullptr;
-    PS_CREATE_INFO createInfo = { sizeof(PS_CREATE_INFO) };
-    PS_ATTRIBUTE_LIST attributeList = { sizeof(PS_ATTRIBUTE_LIST) };
 
-    NTSTATUS status = RtlCreateProcessParametersEx(
-            &processParameters,
-            &imagePath,
-            nullptr,
-            nullptr,
-            &commandLineUS,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            nullptr,
-            RTL_USER_PROC_PARAMS_NORMALIZED
+    // Запуск процесса
+    BOOL result = CreateProcessW(
+            fullPath.c_str(),         // Исполняемый файл
+            const_cast<wchar_t*>(commandLine.c_str()), // Полная командная строка
+            nullptr,                  // Атрибуты безопасности процесса
+            nullptr,                  // Атрибуты безопасности потока
+            FALSE,                    // Наследование дескрипторов
+            0,                        // Флаги
+            nullptr,                  // Переменные окружения
+            nullptr,                  // Текущая директория
+            &startupInfo,             // Стартовые параметры
+            &processInfo              // Информация о процессе
     );
 
-    if (!NT_SUCCESS(status)) {
-        throw std::runtime_error("Failed to create process parameters, NTSTATUS: " + std::to_string(status));
+    if (!result) {
+        DWORD error = GetLastError();
+        throw std::runtime_error("Failed to create process, error code: " + std::to_string(error));
     }
 
-    status = NtCreateUserProcess(
-            &processHandle,
-            &threadHandle,
-            MAXIMUM_ALLOWED,
-            MAXIMUM_ALLOWED,
-            nullptr,
-            nullptr,
-            0,
-            0,
-            processParameters,
-            &createInfo,
-            &attributeList
-    );
+    std::cout << "Process launched successfully!" << std::endl;
 
-    if (!NT_SUCCESS(status)) {
-        throw std::runtime_error("Failed to create process, NTSTATUS: " + std::to_string(status));
-    }
+    // Ожидание завершения процесса
+    WaitForSingleObject(processInfo.hProcess, INFINITE);
 
-    std::cout << "Process launched successfully: " << std::string(fullPath.begin(), fullPath.end()) << std::endl;
-
-    if (processHandle) CloseHandle(processHandle);
-    if (threadHandle) CloseHandle(threadHandle);
-    if (processParameters) RtlFreeHeap(GetProcessHeap(), 0, processParameters);
+    // Закрытие дескрипторов
+    CloseHandle(processInfo.hProcess);
+    CloseHandle(processInfo.hThread);
 }

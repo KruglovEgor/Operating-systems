@@ -5,6 +5,12 @@
 #include <cstdlib> // Для std::atoi
 
 int main(int argc, char* argv[]) {
+
+    std::cout << "Arguments received:\n";
+    for (int i = 0; i < argc; ++i) {
+        std::cout << "argv[" << i << "]: " << argv[i] << "\n";
+    }
+
     if (argc < 2) {
         std::cerr << "Error: Please provide the size of the array.\n";
         return 1;
@@ -12,7 +18,7 @@ int main(int argc, char* argv[]) {
 
     int arraySize = std::atoi(argv[1]);
     if (arraySize <= 0) {
-        std::cerr << "Error: Invalid array size.\n";
+        std::cerr << "Error: Invalid array size.\n" ;
         return 1;
     }
 
