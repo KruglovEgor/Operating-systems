@@ -6,50 +6,16 @@
 Shell::Shell() {
     commands["cd"] = std::make_unique<CdCommand>();
     commands["ls"] = std::make_unique<LsCommand>();
-}
+    commands["cat"] = std::make_unique<CatCommand>();
+    commands["mkdir"] = std::make_unique<MkdirCommand>();
+    commands["help"] = std::make_unique<HelpCommand>();
+    commands["rm"] = std::make_unique<RmCommand>();
+    commands["touch"] = std::make_unique<TouchCommand>();
 
-//// Основной цикл работы shell
-//void Shell::run() {
-//    std::string input;
-//    while (true) {
-//        // Получаем текущую директорию
-//        std::string currentPath = std::filesystem::current_path().string();
-//
-//        // Выводим приглашение с текущей директорией
-//        std::cout << currentPath << " > ";
-//        std::getline(std::cin, input);
-//
-//        if (input == "exit") {
-//            break;
-//        }
-//
-//        try {
-//            executeCommand(input);
-//        } catch (const std::exception& ex) {
-//            std::cerr << "Error: " << ex.what() << std::endl;
-//        }
-//    }
-//}
-//
-//// Выполнение команды
-//void Shell::executeCommand(const std::string& input) {
-//    std::istringstream iss(input);
-//    std::string command;
-//    iss >> command;
-//
-//    std::string args;
-//    std::getline(iss, args);
-//    args.erase(0, args.find_first_not_of(' ')); // Удаление начальных пробелов
-//
-//    // Проверяем, зарегистрирована ли команда
-//    auto it = commands.find(command);
-//    if (it != commands.end()) {
-//        it->second->execute(args); // Выполняем команду
-//    } else {
-//        // Если команда не найдена, передаем ее в CommandExecutor
-//        commandExecutor.execute(command, {args});
-//    }
-//}
+    // Регистрация команды history с передачей ссылки на вектор истории
+    commands["history"] = std::make_unique<HistoryCommand>();
+
+}
 
 void Shell::run() {
     std::string input;
@@ -63,6 +29,7 @@ void Shell::run() {
         }
 
         try {
+            addToHistory(input); // Сохранение в историю
             handleCommand(input);
         } catch (const std::exception &e) {
             std::cerr << "Error: " << e.what() << "\n";
@@ -106,5 +73,16 @@ void Shell::executeExternalCommand(const std::string &command, const std::string
         executor.execute(resolvedPath, argsVector); // Запуск команды
     } catch (const std::exception &e) {
         throw std::runtime_error(std::string("Failed to execute external command: ") + e.what());
+    }
+}
+
+void Shell::addToHistory(const std::string& command) {
+    // Находим команду history
+    auto it = commands.find("history");
+    if (it != commands.end()) {
+        auto historyCommand = dynamic_cast<HistoryCommand*>(it->second.get());
+        if (historyCommand) {
+            historyCommand->addToHistory(command); // Добавляем в историю
+        }
     }
 }
