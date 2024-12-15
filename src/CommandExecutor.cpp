@@ -59,10 +59,6 @@ void CommandExecutor::launchProcess(const std::wstring &fullPath, const std::wst
     STARTUPINFOW startupInfo = { sizeof(startupInfo) };
     PROCESS_INFORMATION processInfo;
 
-
-    std::wcout << L"Launching process with command: " << commandLine << std::endl;
-
-
     // Запуск процесса
     BOOL result = CreateProcessW(
             fullPath.c_str(),         // Исполняемый файл
