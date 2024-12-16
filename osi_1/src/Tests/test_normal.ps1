@@ -5,7 +5,7 @@ param (
 )
 
 # Параметры для программ
-$SortArguments = @("10000000")
+$SortArguments = @("100000000")
 $IoThptWriteArguments = @("output.dat", "100000", "10000")
 
 # Запуск SortProgram
