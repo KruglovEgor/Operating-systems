@@ -20,7 +20,18 @@ add_executable(osi_1 src/Main.cpp
 
 add_executable(io-thpt-write src/Benchmarks/IoThptWrite.cpp)
 add_executable(sort src/Benchmarks/Sort.cpp)
-
+add_executable(combined src/Benchmarks/Comdined.cpp)
 
 # Подключение библиотеки ntdll
 target_link_libraries(osi_1 PRIVATE ntdll.lib)
+
+if (MSVC)
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /O2 /GL /arch:AVX2")
+else()
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native -funroll-loops")
+endif()
+
+add_executable(test-proc src/TestDir/TestProc.cpp)
+target_link_libraries(test-proc PRIVATE pdh.lib)
+
+
