@@ -86,8 +86,18 @@ void Shell::executeExternalCommand(const std::string &command, const std::string
 
         // Многократный запуск команды
         for (int i = 0; i < repetitions; ++i) {
+
+            // Создаём модифицированный список аргументов для каждого запуска
+            std::vector<std::string> modifiedArgs = argsVector;
+            for (auto &arg : modifiedArgs) {
+                if (arg.size() > 4 && arg.substr(arg.size() - 4) == ".dat") {
+                    // Заменяем имя файла на уникальное
+                    arg = arg.substr(0, arg.size() - 4) + "_" + std::to_string(i + 1) + ".dat";
+                }
+            }
+
             std::cout << "Starting instance " << (i + 1) << " of " << repetitions << "\n";
-            executor.execute(resolvedPath, argsVector);
+            executor.execute(resolvedPath, modifiedArgs);
         }
         executor.waitForAllProcesses();
         std::cout << "All processes completed." << std::endl;
