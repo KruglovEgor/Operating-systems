@@ -8,17 +8,8 @@
 #include <iostream>
 
 
-
-
-void RtlInitUnicodeString(PUNICODE_STRING DestinationString, PCWSTR SourceString) {
-    if (DestinationString != nullptr) {
-        size_t length = (SourceString != nullptr) ? wcslen(SourceString) * sizeof(WCHAR) : 0;
-        DestinationString->Length = (USHORT)length;
-        DestinationString->MaximumLength = (USHORT)(length + sizeof(WCHAR));
-        DestinationString->Buffer = (PWCHAR)SourceString;
-    }
-}
-
+// Добавляем хранение запущенных процессов (глобально или как член класса)
+std::vector<HANDLE> runningProcesses;
 
 void CommandExecutor::execute(const std::string& command, const std::vector<std::string>& args) {
     // Разрешаем полный путь команды
@@ -78,12 +69,19 @@ void CommandExecutor::launchProcess(const std::wstring &fullPath, const std::wst
         throw std::runtime_error("Failed to create process, error code: " + std::to_string(error));
     }
 
-    std::cout << "Process launched successfully!" << std::endl;
+    std::cout << "Process launched successfully! PID: " << processInfo.dwProcessId << std::endl;
 
-    // Ожидание завершения процесса
-    WaitForSingleObject(processInfo.hProcess, INFINITE);
 
-    // Закрытие дескрипторов
-    CloseHandle(processInfo.hProcess);
+    runningProcesses.push_back(processInfo.hProcess);
+    // Дескриптор потока можно закрыть сразу, он больше не нужен
     CloseHandle(processInfo.hThread);
+}
+
+// Метод для ожидания всех запущенных процессов (по необходимости)
+void CommandExecutor::waitForAllProcesses() {
+    for (HANDLE process : runningProcesses) {
+        WaitForSingleObject(process, INFINITE);
+        CloseHandle(process);
+    }
+    runningProcesses.clear();
 }

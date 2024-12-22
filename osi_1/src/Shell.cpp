@@ -64,13 +64,33 @@ void Shell::executeExternalCommand(const std::string &command, const std::string
             }
         }
 
+        // Поиск аргумента --n=X
+        int repetitions = 1; // По умолчанию запускаем 1 раз
+        for (auto it = argsVector.begin(); it != argsVector.end(); ++it) {
+            if (it->rfind("--n=", 0) == 0) { // Если аргумент начинается с --n=
+                try {
+                    repetitions = std::stoi(it->substr(4)); // Извлечение числа X
+                    argsVector.erase(it); // Удаляем параметр --n=X из списка
+                } catch (const std::invalid_argument&) {
+                    throw std::runtime_error("Invalid value for --n=X");
+                }
+                break;
+            }
+        }
+
         // Ищем полный путь команды
         std::string resolvedPath = executor.resolveFullPath(command);
         if (resolvedPath.empty()) {
             throw std::runtime_error("Command not found: " + command);
         }
 
-        executor.execute(resolvedPath, argsVector); // Запуск команды
+        // Многократный запуск команды
+        for (int i = 0; i < repetitions; ++i) {
+            std::cout << "Starting instance " << (i + 1) << " of " << repetitions << "\n";
+            executor.execute(resolvedPath, argsVector);
+        }
+        executor.waitForAllProcesses();
+        std::cout << "All processes completed." << std::endl;
     } catch (const std::exception &e) {
         throw std::runtime_error(std::string("Failed to execute external command: ") + e.what());
     }
