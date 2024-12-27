@@ -6,11 +6,16 @@ int main()
 {
     // Path to the image file from which the process will be created
     UNICODE_STRING NtImagePath;
-    RtlInitUnicodeString(&NtImagePath, (PWSTR)L"\\??\\C:\\Windows\\System32\\calc.exe");
+    RtlInitUnicodeString(&NtImagePath, (PWSTR)L"\\??\\E:\\GitHub\\Operating-systems\\osi_1\\cmake-build-release\\sort.exe");
+
+    // Command-line parameters for cmd.exe
+    UNICODE_STRING CmdLine;
+    RtlInitUnicodeString(&CmdLine, (PWSTR)L"sort.exe 99999999 3");
+
 
     // Create the process parameters
     PRTL_USER_PROCESS_PARAMETERS ProcessParameters = NULL;
-    RtlCreateProcessParametersEx(&ProcessParameters, &NtImagePath, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, RTL_USER_PROCESS_PARAMETERS_NORMALIZED);
+    RtlCreateProcessParametersEx(&ProcessParameters, &NtImagePath, NULL, NULL, &CmdLine, NULL, NULL, NULL, NULL, NULL, RTL_USER_PROCESS_PARAMETERS_NORMALIZED);
 
     // Initialize the PS_CREATE_INFO structure
     PS_CREATE_INFO CreateInfo = { 0 };
