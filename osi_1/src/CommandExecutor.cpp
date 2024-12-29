@@ -1,11 +1,9 @@
 #define WIN32_LEAN_AND_MEAN // Исключает редко используемые функции из Windows.h
 #include "CommandExecutor.h"
 #include <Windows.h>
-//#include <winternl.h>
 #include <sstream>
 #include <stdexcept>
 #include <filesystem>
-#include <iostream>
 
 #include "ntdll.h"
 #pragma comment(lib, "ntdll")
@@ -91,7 +89,7 @@ void CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstri
 
     // Create the process
     HANDLE hProcess, hThread = NULL;
-    NtCreateUserProcess(&hProcess, &hThread, PROCESS_ALL_ACCESS, THREAD_ALL_ACCESS, NULL, NULL, NULL, NULL, ProcessParameters, &CreateInfo, AttributeList);
+    status = NtCreateUserProcess(&hProcess, &hThread, PROCESS_ALL_ACCESS, THREAD_ALL_ACCESS, NULL, NULL, NULL, NULL, ProcessParameters, &CreateInfo, AttributeList);
 
 
     if (!NT_SUCCESS(status)) {
