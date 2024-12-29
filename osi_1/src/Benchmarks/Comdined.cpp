@@ -125,5 +125,9 @@ int main(int argc, char* argv[]) {
     // Выполнение записи с измерением пропускной способности
     runIoThptWrite(filename, blockSize, numBlocks, writeRepeatCount);
 
+    // Пауза для предотвращения закрытия консоли
+    std::cout << "\nPress Enter to exit...";
+    std::cin.get();
+
     return 0;
 }

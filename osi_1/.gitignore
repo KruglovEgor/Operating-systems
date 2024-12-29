@@ -11,3 +11,4 @@ cmake-build-release/
 *.exe
 *.obj
 .idea/
+src/TestDir/*.log

@@ -53,7 +53,7 @@ void Shell::handleCommand(const std::string &input) {
     }
 }
 
-void Shell::executeExternalCommand(const std::string &command, const std::string &args) {
+std::vector<DWORD> Shell::executeExternalCommand(const std::string &command, const std::string &args) {
     try {
         std::vector<std::string> argsVector;
         if (!args.empty()) {
@@ -84,6 +84,10 @@ void Shell::executeExternalCommand(const std::string &command, const std::string
             throw std::runtime_error("Command not found: " + command);
         }
 
+        auto start = std::chrono::high_resolution_clock::now();
+        std::vector<DWORD> pids; // Для сохранения PID всех процессов
+
+
         // Многократный запуск команды
         for (int i = 0; i < repetitions; ++i) {
 
@@ -95,12 +99,20 @@ void Shell::executeExternalCommand(const std::string &command, const std::string
                     arg = arg.substr(0, arg.size() - 4) + "_" + std::to_string(i + 1) + ".dat";
                 }
             }
-
             std::cout << "Starting instance " << (i + 1) << " of " << repetitions << "\n";
-            executor.execute(resolvedPath, modifiedArgs);
+            if (i == 0){
+                start = std::chrono::high_resolution_clock::now();
+            }
+            DWORD pid = executor.execute(resolvedPath, modifiedArgs);
+            pids.push_back(pid); // Сохраняем PID
+
         }
         executor.waitForAllProcesses();
-        std::cout << "All processes completed." << std::endl;
+        auto end = std::chrono::high_resolution_clock::now();
+        std::chrono::duration<double> elapsed = end - start;
+        std::cout << "All processes completed in " << elapsed.count() << " seconds." << std::endl;
+
+        return pids; // Возвращаем список PID
     } catch (const std::exception &e) {
         throw std::runtime_error(std::string("Failed to execute external command: ") + e.what());
     }

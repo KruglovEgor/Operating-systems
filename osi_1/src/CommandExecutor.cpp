@@ -4,6 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <filesystem>
+#include <iostream>
 
 #include "ntdll.h"
 #pragma comment(lib, "ntdll")
@@ -11,7 +12,7 @@
 // Добавляем хранение запущенных процессов (глобально или как член класса)
 std::vector<HANDLE> runningProcesses;
 
-void CommandExecutor::execute(const std::string& command, const std::vector<std::string>& args) {
+DWORD CommandExecutor::execute(const std::string& command, const std::vector<std::string>& args) {
     // Разрешаем полный путь команды
     std::string fullPath = resolveFullPath(command);
     if (fullPath.empty()) {
@@ -28,7 +29,9 @@ void CommandExecutor::execute(const std::string& command, const std::vector<std:
     }
 
     // Запускаем процесс
-    launchProcess(ntPath, commandLine);
+    DWORD pid = launchProcess(ntPath, commandLine);
+    std::cout << "Started process with PID: " << pid << "\n";
+    return pid;
 }
 
 std::string CommandExecutor::resolveFullPath(const std::string &command) {
@@ -53,7 +56,7 @@ std::wstring CommandExecutor::toNtPath(const std::string& fullPath) {
     return L"\\??\\" + std::wstring(fullPath.begin(), fullPath.end());
 }
 
-void CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstring& commandLine) {
+DWORD CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstring& commandLine) {
     // Path to the image file from which the process will be created
     UNICODE_STRING NtImagePath;
     RtlInitUnicodeString(&NtImagePath, (PWSTR)ntPath.c_str());
@@ -98,6 +101,15 @@ void CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstri
         throw std::runtime_error("Failed to create process.");
     }
 
+    // Получаем PID через GetProcessId
+    DWORD pid = GetProcessId(hProcess);
+    if (pid == 0) {
+        // Ошибка получения PID
+        RtlFreeHeap(RtlProcessHeap(), 0, AttributeList);
+        RtlDestroyProcessParameters(ProcessParameters);
+        throw std::runtime_error("Failed to retrieve PID.");
+    }
+
     // Добавляем процесс в список запущенных
     runningProcesses.push_back(hProcess);
 
@@ -107,6 +119,8 @@ void CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstri
     // Очистка ресурсов
     RtlFreeHeap(RtlProcessHeap(), 0, AttributeList);
     RtlDestroyProcessParameters(ProcessParameters);
+
+    return pid;
 }
 
 // Метод для ожидания всех запущенных процессов (по необходимости)

@@ -1,16 +1,19 @@
-#include <windows.h>
 #include <iostream>
 #include <fstream>
-#include <thread>
 #include <vector>
-#include <chrono>
 #include <string>
-#include <pdh.h>
+#include <chrono>
+#include <windows.h>
+#include "../ntdll.h"
+#pragma comment(lib, "ntdll")
+#include <thread> // Для sleep_for
 
+
+#pragma comment(lib, "pdh.lib")
 
 std::vector<HANDLE> runningProcesses;
 
-void logMetrics(const std::string& processName, DWORD pid, const std::string& logFile) {
+void logMetrics(DWORD pid, const std::string& logFile) {
     // Открываем файл для записи
     std::ofstream log(logFile, std::ios::app);
     if (!log.is_open()) {
@@ -37,8 +40,7 @@ void logMetrics(const std::string& processName, DWORD pid, const std::string& lo
             double userSeconds = userTime64.QuadPart / 1e7;
             double kernelSeconds = kernelTime64.QuadPart / 1e7;
 
-            log << "Process: " << processName
-                << " | PID: " << pid
+            log << "PID: " << pid
                 << " | User Time: " << userSeconds << "s"
                 << " | Kernel Time: " << kernelSeconds << "s\n";
         } else {
@@ -49,59 +51,115 @@ void logMetrics(const std::string& processName, DWORD pid, const std::string& lo
     }
 }
 
-void launchProcess(const std::string command, const std::wstring &fullPath, const std::wstring &commandLine, const std::string& logFile) {
-    // Инициализация структуры для CreateProcess
-    STARTUPINFOW startupInfo = { sizeof(startupInfo) };
-    PROCESS_INFORMATION processInfo;
 
-    // Запуск процесса
-    BOOL result = CreateProcessW(
-            fullPath.c_str(),         // Исполняемый файл
-            const_cast<wchar_t*>(commandLine.c_str()), // Полная командная строка
-            nullptr,                  // Атрибуты безопасности процесса
-            nullptr,                  // Атрибуты безопасности потока
-            FALSE,                    // Наследование дескрипторов
-            0,                        // Флаги
-            nullptr,                  // Переменные окружения
-            nullptr,                  // Текущая директория
-            &startupInfo,             // Стартовые параметры
-            &processInfo              // Информация о процессе
-    );
+DWORD launchProcess(const std::wstring &fullPath, const std::wstring &commandLine, const std::string& logFile) {
+    // Path to the image file from which the process will be created
+    UNICODE_STRING NtImagePath;
+    RtlInitUnicodeString(&NtImagePath, (PWSTR)fullPath.c_str());
 
-    if (!result) {
-        DWORD error = GetLastError();
-        throw std::runtime_error("Failed to create process, error code: " + std::to_string(error));
+    // Command-line parameters for cmd.exe
+    UNICODE_STRING CommandLine;
+    RtlInitUnicodeString(&CommandLine, (PWSTR)commandLine.c_str());
+
+
+    // Create the process parameters
+    PRTL_USER_PROCESS_PARAMETERS ProcessParameters = NULL;
+    NTSTATUS status = RtlCreateProcessParametersEx(&ProcessParameters, &NtImagePath, NULL, NULL, &CommandLine, NULL, NULL, NULL, NULL, NULL, RTL_USER_PROCESS_PARAMETERS_NORMALIZED);
+
+    if (!NT_SUCCESS(status)) {
+        throw std::runtime_error("Failed to create process parameters.");
     }
 
-    std::cout << "Process " << command << " launched successfully! PID: " << processInfo.dwProcessId << std::endl;
+    // Initialize the PS_CREATE_INFO structure
+    PS_CREATE_INFO CreateInfo = { 0 };
+    CreateInfo.Size = sizeof(CreateInfo);
+    CreateInfo.State = PsCreateInitialState;
 
-    runningProcesses.push_back(processInfo.hProcess);
-    std::thread logThread(logMetrics, command, processInfo.dwProcessId, logFile);
+    // Initialize the PS_ATTRIBUTE_LIST structure
+    PPS_ATTRIBUTE_LIST AttributeList = (PS_ATTRIBUTE_LIST*)RtlAllocateHeap(RtlProcessHeap(), HEAP_ZERO_MEMORY, sizeof(PS_ATTRIBUTE));
+    if (!AttributeList) {
+        RtlDestroyProcessParameters(ProcessParameters);
+        throw std::runtime_error("Failed to allocate memory for PS_ATTRIBUTE_LIST.");
+    }
+    AttributeList->TotalLength = sizeof(PS_ATTRIBUTE_LIST) - sizeof(PS_ATTRIBUTE);
+    AttributeList->Attributes[0].Attribute = PS_ATTRIBUTE_IMAGE_NAME;
+    AttributeList->Attributes[0].Size = NtImagePath.Length;
+    AttributeList->Attributes[0].Value = (ULONG_PTR)NtImagePath.Buffer;
+
+    // Create the process
+    HANDLE hProcess, hThread = NULL;
+    status = NtCreateUserProcess(&hProcess, &hThread, PROCESS_ALL_ACCESS, THREAD_ALL_ACCESS, NULL, NULL, NULL, NULL, ProcessParameters, &CreateInfo, AttributeList);
+
+
+    if (!NT_SUCCESS(status)) {
+        RtlFreeHeap(RtlProcessHeap(), 0, AttributeList);
+        RtlDestroyProcessParameters(ProcessParameters);
+        throw std::runtime_error("Failed to create process.");
+    }
+
+    // Получаем PID через GetProcessId
+    DWORD pid = GetProcessId(hProcess);
+    if (pid == 0) {
+        // Ошибка получения PID
+        RtlFreeHeap(RtlProcessHeap(), 0, AttributeList);
+        RtlDestroyProcessParameters(ProcessParameters);
+        throw std::runtime_error("Failed to retrieve PID.");
+    }
+
+    // Добавляем процесс в список запущенных
+    runningProcesses.push_back(hProcess);
+    std::thread logThread(logMetrics, pid, logFile);
     logThread.detach();
-    // Дескриптор потока можно закрыть сразу, он больше не нужен
-    CloseHandle(processInfo.hThread);
+
+    // Закрываем поток, поскольку он уже запущен
+    CloseHandle(hThread);
+
+    // Очистка ресурсов
+    RtlFreeHeap(RtlProcessHeap(), 0, AttributeList);
+    RtlDestroyProcessParameters(ProcessParameters);
+
+    return pid;
 }
 
-
-int main() {
-    // Настройки теста
-    std::string logFile = "metrics.log";
-    std::wstring workloadSort = L"E:\\Program Files\\CLionProjects\\osi_1\\cmake-build-release\\sort.exe";
-    std::wstring workloadIO = L"E:\\Program Files\\CLionProjects\\osi_1\\cmake-build-release\\io-thpt-write.exe";
-    std::string commandSort = "sort";
-    std::string commandIO = "IO";
-    int instancesPerWorkload = 2;
-
-     //Запуск нагрузчиков
-    for (int i = 0; i < instancesPerWorkload; ++i) {
-        launchProcess(commandSort, workloadSort, L"\"" + workloadSort + L"\" 1000000000", logFile);
-        launchProcess(commandIO, workloadIO, L"\"" + workloadIO + L"\" out_" + std::to_wstring(i+1) + L".dat 3072 100000", logFile);
+// Метод для ожидания всех запущенных процессов (по необходимости)
+void waitForAllProcesses() {
+    for (HANDLE process : runningProcesses) {
+        WaitForSingleObject(process, INFINITE);
+        CloseHandle(process);
     }
+    runningProcesses.clear();
+}
 
-    std::cout << "All workloads launched. Metrics are being logged to: " << logFile << "\n";
+// Тестовая функция
+void runTests() {
 
-    // Удерживаем процесс, чтобы дать время на сбор данных
-    std::this_thread::sleep_for(std::chrono::minutes(1));
+    std::wstring sortPath = L"\\??\\D:\\Git\\Operating-systems\\osi_1\\cmake-build-release\\sort.exe";
+    std::wstring ioPath = L"\\??\\D:\\Git\\Operating-systems\\osi_1\\cmake-build-release\\io-thpt-write.exe";
+    std::wstring combinedPath = L"\\??\\D:\\Git\\Operating-systems\\osi_1\\cmake-build-release\\combined.exe";
 
+    std::wstring sortLine = L"sort.exe 100000000 2";
+    std::wstring ioLine = L"io-thpt-write.exe out.dat 2048 400000 2";
+    std::wstring combinedLine = L"combined.exe 100000000 2 | out.dat 2048 400000 2";
+
+    std::string logPath = "..\\src\\TestDir\\metrics.log";
+
+    int n = 2;
+    auto start = std::chrono::high_resolution_clock::now();
+    for(int i = 0; i < n; ++i){
+        launchProcess(sortPath, sortLine, logPath);
+        launchProcess(ioPath, ioLine, logPath);
+        launchProcess(combinedPath, combinedLine, logPath);
+    }
+    std::cout << "All workloads launched. Metrics are being logged to: " << logPath << "\n";
+    waitForAllProcesses();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+
+    std::cout << "All processes completed in " << elapsed.count() << " seconds.\n";
+
+}
+
+int main(){
+    runTests();
     return 0;
 }

@@ -21,13 +21,11 @@ class Shell {
 public:
     Shell();                 // Конструктор для регистрации команд
     void run();              // Метод для запуска командной оболочки
+    std::vector<DWORD> executeExternalCommand(const std::string &command, const std::string &args); // Выполнение внешней команды
 
 private:
     void handleCommand(const std::string &input);  // Обработка введенной команды
-    void executeExternalCommand(const std::string &command, const std::string &args); // Выполнение внешней команды
     void addToHistory(const std::string& command);
-
-
     CommandExecutor executor;  // Обработчик внешних команд
     std::unordered_map<std::string, std::unique_ptr<Command>> commands; // Словарь команд с unique_ptr
 
