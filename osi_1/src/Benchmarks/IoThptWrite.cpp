@@ -74,7 +74,10 @@ int main(int argc, char* argv[]) {
         std::cout << "Maximum time: " << maxTime << " seconds\n";
         std::cout << "Average time: " << avgTime << " seconds\n";
     }
-
+    
+    // Пауза для предотвращения закрытия консоли
+    std::cout << "\nPress Enter to exit...";
+    std::cin.get();
 
     return 0;
 }
