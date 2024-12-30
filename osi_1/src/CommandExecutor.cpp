@@ -13,7 +13,7 @@
 std::vector<HANDLE> runningProcesses;
 
 DWORD CommandExecutor::execute(const std::string& command, const std::vector<std::string>& args) {
-    // Разрешаем полный путь команды
+    // Получаем полный путь команды
     std::string fullPath = resolveFullPath(command);
     if (fullPath.empty()) {
         throw std::runtime_error("Command not found: " + command);
@@ -57,16 +57,16 @@ std::wstring CommandExecutor::toNtPath(const std::string& fullPath) {
 }
 
 DWORD CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstring& commandLine) {
-    // Path to the image file from which the process will be created
+    // Путь до image файла из которого будет создан процесс
     UNICODE_STRING NtImagePath;
     RtlInitUnicodeString(&NtImagePath, (PWSTR)ntPath.c_str());
-
-    // Command-line parameters for cmd.exe
+    
+    // Параметры CommandLine
     UNICODE_STRING CommandLine;
     RtlInitUnicodeString(&CommandLine, (PWSTR)commandLine.c_str());
 
 
-    // Create the process parameters
+    // Задаем параметры процесса
     PRTL_USER_PROCESS_PARAMETERS ProcessParameters = NULL;
     NTSTATUS status = RtlCreateProcessParametersEx(&ProcessParameters, &NtImagePath, NULL, NULL, &CommandLine, NULL, NULL, NULL, NULL, NULL, RTL_USER_PROCESS_PARAMETERS_NORMALIZED);
 
@@ -74,12 +74,12 @@ DWORD CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstr
         throw std::runtime_error("Failed to create process parameters.");
     }
 
-    // Initialize the PS_CREATE_INFO structure
+    // Инициализируем структуру PS_CREATE_INFO
     PS_CREATE_INFO CreateInfo = { 0 };
     CreateInfo.Size = sizeof(CreateInfo);
     CreateInfo.State = PsCreateInitialState;
 
-    // Initialize the PS_ATTRIBUTE_LIST structure
+    // Инициализируем структуру PS_ATTRIBUTE_LIST
     PPS_ATTRIBUTE_LIST AttributeList = (PS_ATTRIBUTE_LIST*)RtlAllocateHeap(RtlProcessHeap(), HEAP_ZERO_MEMORY, sizeof(PS_ATTRIBUTE));
     if (!AttributeList) {
         RtlDestroyProcessParameters(ProcessParameters);
@@ -90,7 +90,7 @@ DWORD CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstr
     AttributeList->Attributes[0].Size = NtImagePath.Length;
     AttributeList->Attributes[0].Value = (ULONG_PTR)NtImagePath.Buffer;
 
-    // Create the process
+    // Создаем процесс
     HANDLE hProcess, hThread = NULL;
     status = NtCreateUserProcess(&hProcess, &hThread, PROCESS_ALL_ACCESS, THREAD_ALL_ACCESS, NULL, NULL, NULL, NULL, ProcessParameters, &CreateInfo, AttributeList);
 
@@ -123,7 +123,7 @@ DWORD CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstr
     return pid;
 }
 
-// Метод для ожидания всех запущенных процессов (по необходимости)
+// Метод для ожидания всех запущенных процессов
 void CommandExecutor::waitForAllProcesses() {
     for (HANDLE process : runningProcesses) {
         WaitForSingleObject(process, INFINITE);
