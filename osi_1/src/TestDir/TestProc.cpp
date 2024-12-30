@@ -7,6 +7,7 @@
 #include "../ntdll.h"
 #pragma comment(lib, "ntdll")
 #include <thread> // Для sleep_for
+#include <sstream>
 
 
 #pragma comment(lib, "pdh.lib")
@@ -130,6 +131,12 @@ void waitForAllProcesses() {
     runningProcesses.clear();
 }
 
+std::wstring makeOutPath(int index){
+    std::wostringstream woss;
+    woss << L"out_" << index << L".dat";
+    return woss.str();
+}
+
 // Тестовая функция
 void runTests() {
 
@@ -138,14 +145,18 @@ void runTests() {
     std::wstring combinedPath = L"\\??\\D:\\Git\\Operating-systems\\osi_1\\cmake-build-release\\combined.exe";
 
     std::wstring sortLine = L"sort.exe 100000000 2";
-    std::wstring ioLine = L"io-thpt-write.exe out.dat 2048 400000 2";
-    std::wstring combinedLine = L"combined.exe 100000000 2 | out.dat 2048 400000 2";
-
+    std::wstring ioLineOne = L"io-thpt-write.exe";
+    std::wstring ioLineTwo = L"2048 800000 2";
+    std::wstring combinedLineOne = L"combined.exe 100000000 2 |";
+    std::wstring combinedLineTwo = L"2048 400000 2";
     std::string logPath = "..\\src\\TestDir\\metrics.log";
 
     int n = 2;
     auto start = std::chrono::high_resolution_clock::now();
     for(int i = 0; i < n; ++i){
+        std::wstring ioLine = ioLineOne + L" " + makeOutPath(i) + L" " + ioLineTwo;
+        std::wstring combinedLine = combinedLineOne + L" " + makeOutPath(i) + L" " + combinedLineTwo;
+
         launchProcess(sortPath, sortLine, logPath);
         launchProcess(ioPath, ioLine, logPath);
         launchProcess(combinedPath, combinedLine, logPath);

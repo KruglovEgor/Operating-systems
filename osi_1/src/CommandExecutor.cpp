@@ -60,7 +60,7 @@ DWORD CommandExecutor::launchProcess(const std::wstring& ntPath, const std::wstr
     // Путь до image файла из которого будет создан процесс
     UNICODE_STRING NtImagePath;
     RtlInitUnicodeString(&NtImagePath, (PWSTR)ntPath.c_str());
-    
+
     // Параметры CommandLine
     UNICODE_STRING CommandLine;
     RtlInitUnicodeString(&CommandLine, (PWSTR)commandLine.c_str());
