@@ -155,7 +155,7 @@ void runTests() {
     auto start = std::chrono::high_resolution_clock::now();
     for(int i = 0; i < n; ++i){
         std::wstring ioLine = ioLineOne + L" " + makeOutPath(i) + L" " + ioLineTwo;
-        std::wstring combinedLine = combinedLineOne + L" " + makeOutPath(i) + L" " + combinedLineTwo;
+        std::wstring combinedLine = combinedLineOne + L" " + makeOutPath(i+n) + L" " + combinedLineTwo;
 
         launchProcess(sortPath, sortLine, logPath);
         launchProcess(ioPath, ioLine, logPath);
