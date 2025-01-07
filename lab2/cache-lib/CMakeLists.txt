@@ -16,7 +16,7 @@ set(SOURCE_FILES
 # Создаем исполнимый файл для тестов
 add_executable(cache_library_test ${SOURCE_FILES})
 
-#add_library(cache_library SHARED src/api.cpp src/lru_policy.cpp)
-#
-#target_include_directories(cache_library PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(cache_library SHARED src/api.cpp src/lru_policy.cpp)
+
+target_include_directories(cache_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
