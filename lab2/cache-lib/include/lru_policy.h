@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <utility> // Для std::pair
 #include <functional> // Для std::hash
+#include <windows.h>
 
 // Пользовательская хэш-функция для std::pair
 namespace std {
@@ -18,27 +19,43 @@ namespace std {
     };
 }
 
+// Размер сектора для работы с `FILE_FLAG_NO_BUFFERING`
+// constexpr size_t SECTOR_SIZE = 512;
+#define SECTOR_SIZE 512
+
+typedef HANDLE (*GetHandleCallback)(int fd);
+
+
 class LRUCache {
 public:
-    LRUCache(size_t capacity) : capacity_(capacity), used_(0) {}
+    LRUCache(size_t capacity, GetHandleCallback callback)
+        : capacity_(capacity), used_(0), get_handle_callback_(callback) {}
 
     size_t read(int fd, size_t offset, char* buf, size_t size);
     void write(int fd, size_t offset, const char* buf, size_t size);
+    void flush(int fd);
+    void evict();
+
+    void print_cache(); // Новый метод для вывода содержимого кэша
 
 private:
+
     struct CacheEntry {
         int fd;
-        size_t offset;
-        std::vector<char> data;
+        size_t offset;            // Смещение блока
+        std::vector<char> data;   // Данные блока
+        bool dirty = false;       // Флаг "грязности"
     };
 
-    size_t capacity_;
-    size_t used_;
+    size_t capacity_;             // Максимальный размер кэша
+    size_t used_;                 // Текущий размер используемого кэша
 
     std::list<CacheEntry> cache_list_;
     std::unordered_map<std::pair<int, size_t>, std::list<CacheEntry>::iterator> cache_map_;
 
-    void evict();
+    GetHandleCallback get_handle_callback_;
+
+    void write_to_disk(const CacheEntry& entry); // Сброс записи на диск
 };
 
 #endif // CACHE_LIBRARY_LRU_POLICY_H
