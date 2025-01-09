@@ -1,0 +1,14 @@
+
+src/Tests/sort_benchmark/
+src/Tests/io_benchmark/
+src/Tests/combined_benchmark/
+src/Tests/*.dat
+cmake-build-release
+cmake-build-debug-vs
+.vs/
+cmake-build-debug/
+cmake-build-release/
+*.exe
+*.obj
+.idea/
+src/TestDir/*.log

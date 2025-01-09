@@ -6,17 +6,21 @@ set(CMAKE_CXX_STANDARD 17)
 # Указываем путь к директории с заголовочными файлами
 include_directories("include")
 
-# Список исходных файлов
-set(SOURCE_FILES
-        src/api.cpp
-        src/lru_policy.cpp
+add_library(cache_library SHARED src/api.cpp src/lru_policy.cpp)
+
+target_include_directories(cache_library PUBLIC include)
+
+# Добавляем флаг для экспорта функций из DLL
+target_compile_definitions(cache_library PRIVATE CACHE_LIBRARY_EXPORTS)
+
+# Добавляем тестовое приложение
+add_executable(cache_library_test
         test.cpp
 )
 
-# Создаем исполнимый файл для тестов
-add_executable(cache_library_test ${SOURCE_FILES})
+# Линкуем тестовое приложение с библиотекой
+target_link_libraries(cache_library_test PRIVATE cache_library)
 
-add_library(cache_library SHARED src/api.cpp src/lru_policy.cpp)
-
-target_include_directories(cache_library PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+# Указываем тестовому приложению путь к заголовочным файлам
+target_include_directories(cache_library_test PRIVATE include)
 

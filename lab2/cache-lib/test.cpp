@@ -1,7 +1,7 @@
+#include <api.h>
 #include <iostream>
 #include <cassert>
 #include <cstring>
-#include "include/api.h"
 
 void fill_buffer(char* buffer, size_t size, char value) {
     memset(buffer, value, size);
@@ -45,22 +45,22 @@ int main() {
               << std::string(read_data2 + 1024, 16) << "..." << std::endl;
 
     // 5. Перемещение курсора в начало
-    // new_position = lab2_lseek(fd, 0, SEEK_SET);
+    new_position = lab2_lseek(fd, 0, SEEK_SET);
 
     // 6. Запись 512 других байт
-    // char write_data3[512];
-    // fill_buffer(write_data3, sizeof(write_data3), 'C');
-    // written = lab2_write(fd, write_data3, sizeof(write_data3));
-    // std::cout << "Записано 512 байт: C" << std::endl;
+    char write_data3[512];
+    fill_buffer(write_data3, sizeof(write_data3), 'C');
+    written = lab2_write(fd, write_data3, sizeof(write_data3));
+    std::cout << "Записано 512 байт: C" << std::endl;
 
     // 7. Чтение всех данных после перезаписи
-    // char read_data3[1024 + 512] = {0};
-    // new_position = lab2_lseek(fd, 0, SEEK_SET);
+    char read_data3[1024 + 512] = {0};
+    new_position = lab2_lseek(fd, 0, SEEK_SET);
 
-    // read = lab2_read(fd, read_data3, sizeof(read_data3));
-    // std::cout << "Прочитанные данные после перезаписи: "
-    //           << std::string(read_data3, 16) << "..."
-    //           << std::string(read_data3 + 1024, 16) << "..." << std::endl;
+    read = lab2_read(fd, read_data3, sizeof(read_data3));
+    std::cout << "Прочитанные данные после перезаписи: "
+              << std::string(read_data3, 16) << "..."
+              << std::string(read_data3 + 1024, 16) << "..." << std::endl;
 
     // Закрытие файла
     int close_result = lab2_close(fd);

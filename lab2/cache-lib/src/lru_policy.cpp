@@ -30,13 +30,6 @@ void LRUCache::print_cache() {
 }
 
 
-
-
-
-
-
-
-
 // Чтение данных из кэша
 size_t LRUCache::read(int fd, size_t offset, char* buf, size_t size) {
     size_t total_read = 0;
@@ -61,14 +54,14 @@ size_t LRUCache::read(int fd, size_t offset, char* buf, size_t size) {
             break; // Если нет данных в кэше, выходим
         }
     }
-    std::cout << "After cache read:" << std::endl;
-    print_cache();
+    // std::cout << "After cache read:" << std::endl;
+    // print_cache();
     return total_read;
 }
 
 
 // Запись данных в кэш
-void LRUCache::write(int fd, size_t offset, const char* buf, size_t size) {
+size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size) {
     size_t total_written = 0;
 
     while (total_written < size) {
@@ -94,19 +87,19 @@ void LRUCache::write(int fd, size_t offset, const char* buf, size_t size) {
         size_t block_pos = offset % SECTOR_SIZE;
         size_t to_write = min(size - total_written, SECTOR_SIZE - block_pos);
 
-        std::cout << "Copying to cache: ";
-        for (size_t i = 0; i < to_write; ++i) {
-            std::cout << buf[total_written + i];
-        }
-        std::cout << std::endl;
+        // std::cout << "Copying to cache: ";
+        // for (size_t i = 0; i < to_write; ++i) {
+        //     std::cout << buf[total_written + i];
+        // }
+        // std::cout << std::endl;
 
         std::memcpy(&entry->data[block_pos], buf + total_written, to_write);
 
-        std::cout << "Cache block after memcpy (first 16 bytes): ";
-        for (size_t i = 0; i < 16; ++i) {
-            std::cout << entry->data[i];
-        }
-        std::cout << std::endl;
+        // std::cout << "Cache block after memcpy (first 16 bytes): ";
+        // for (size_t i = 0; i < 16; ++i) {
+        //     std::cout << entry->data[i];
+        // }
+        // std::cout << std::endl;
 
         cache_list_.push_front(*entry);
         cache_map_[{fd, block_offset}] = cache_list_.begin();
@@ -117,8 +110,9 @@ void LRUCache::write(int fd, size_t offset, const char* buf, size_t size) {
             evict();
         }
     }
-    std::cout << "After cache write:" << std::endl;
-    print_cache();
+    // std::cout << "After cache write:" << std::endl;
+    // print_cache();
+    return total_written;
 }
 
 // Сброс dirty блоков на диск

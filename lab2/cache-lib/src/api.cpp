@@ -143,21 +143,23 @@ ssize_t lab2_write(lab2_fd fd, const void* buf, size_t count) {
         return -1;
     }
 
-    std::cout << "lab2_write buffer (first 16 bytes): ";
-    for (size_t i = 0; i < std::min<size_t>(16, count); ++i) {
-        std::cout << static_cast<const char*>(buf)[i];
-    }
-    std::cout << std::endl;
+    // std::cout << "lab2_write buffer (first 16 bytes): ";
+    // for (size_t i = 0; i < std::min<size_t>(16, count); ++i) {
+    //     std::cout << static_cast<const char*>(buf)[i];
+    // }
+    // std::cout << std::endl;
 
 
     FileDescriptor& desc = it->second;
+    size_t total_written = 0;
     if (cache_enabled) {
-        cache.write(fd, desc.position, static_cast<const char*>(buf), count);
+        total_written = cache.write(fd, desc.position, static_cast<const char*>(buf), count);
+        // Обновляем позицию в таблице файлов
+        desc.position += total_written;
     } else {
         DWORD bytesWritten = 0;
         void* aligned_buf = aligned_alloc(SECTOR_SIZE, SECTOR_SIZE);
 
-        size_t total_written = 0;
         while (total_written < count) {
             size_t block_offset = desc.position / SECTOR_SIZE * SECTOR_SIZE;
             size_t block_pos = desc.position % SECTOR_SIZE;
@@ -175,7 +177,6 @@ ssize_t lab2_write(lab2_fd fd, const void* buf, size_t count) {
             total_written += to_write;
             desc.position += to_write;
         }
-
         aligned_free(aligned_buf);
     }
 
