@@ -101,8 +101,10 @@ size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size) {
         // }
         // std::cout << std::endl;
 
-        cache_list_.push_front(*entry);
-        cache_map_[{fd, block_offset}] = cache_list_.begin();
+        if (it == cache_map_.end()) {
+            cache_list_.push_front(*entry);
+            cache_map_[{fd, block_offset}] = cache_list_.begin();
+        }
 
         total_written += to_write;
         offset += to_write;

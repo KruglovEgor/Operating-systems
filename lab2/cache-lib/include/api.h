@@ -15,7 +15,6 @@
 #define CACHE_API __declspec(dllimport)
 #endif
 
-
 // Define the file descriptor type
 typedef int lab2_fd;
 

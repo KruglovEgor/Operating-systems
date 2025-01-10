@@ -10,17 +10,26 @@
 int main(int argc, char* argv[]) {
     system("chcp 65001"); // Установить кодировку консоли на UTF-8
 
-    lab2_set_cache_enabled(true);
+    bool cache_enabled = false;
+    std::vector<std::string> args(argv + 1, argv + argc); // Копируем аргументы в удобный контейнер
+    auto it = std::find(args.begin(), args.end(), "--cache");
+    if (it != args.end()) {
+        cache_enabled = true;
+        args.erase(it); // Убираем флаг из списка аргументов
+    }
 
-    if (argc < 4) {
+    lab2_set_cache_enabled(cache_enabled);
+
+
+    if (args.size() < 3) {
         std::cerr << "Usage: " << argv[0] << " <file> <block_size> <num_blocks> [repeat_count]\n";
         return 1;
     }
 
-    const char* filename = argv[1];
-    size_t blockSize = std::atoi(argv[2]);
-    size_t numBlocks = std::atoi(argv[3]);
-    int repeatCount = (argc > 4) ? std::atoi(argv[4]) : 1;  // Повторения по умолчанию = 1
+    const char* filename = args[0].c_str();
+    size_t blockSize = std::atoi(args[1].c_str());
+    size_t numBlocks = std::atoi(args[2].c_str());
+    int repeatCount = (args.size() > 3) ? std::atoi(args[3].c_str()) : 1; // Повторения по умолчанию = 1
 
     if (blockSize <= 0) {
         std::cerr << "Error: block_size must be a positive integer.\n";

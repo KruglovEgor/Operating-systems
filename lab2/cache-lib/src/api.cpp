@@ -16,7 +16,7 @@ static std::unordered_map<lab2_fd, FileDescriptor> file_table;
 static lab2_fd next_fd = 0;
 
 // Глобальный флаг для управления кэшем
-static bool cache_enabled = true;
+static bool cache_enabled = false;
 
 
 static HANDLE get_file_handle(int fd) {
@@ -28,7 +28,7 @@ static HANDLE get_file_handle(int fd) {
 }
 
 
-static LRUCache cache(1024 * 1024, get_file_handle); // 1 MB cache for example
+static LRUCache cache(2048 * 1024, get_file_handle); // 2 MB cache for example
 
 // Вспомогательная функция для выделения выровненной памяти
 void* aligned_alloc(size_t alignment, size_t size) {
