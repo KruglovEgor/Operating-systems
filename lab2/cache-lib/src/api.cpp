@@ -103,6 +103,7 @@ ssize_t lab2_read(lab2_fd fd, void* buf, size_t count) {
     size_t total_read = 0;
 
     if (cache_enabled) {
+        // Читаем данные из кэша
         total_read = cache.read(fd, desc.position, static_cast<char*>(buf), count);
         desc.position += total_read;
     }
@@ -122,10 +123,12 @@ ssize_t lab2_read(lab2_fd fd, void* buf, size_t count) {
                 break;
             }
 
-            cache.write(fd, block_offset, static_cast<char*>(aligned_buf), bytesRead);
-
             size_t to_copy = min(count - total_read, static_cast<size_t>(bytesRead));
             std::memcpy(static_cast<char*>(buf) + total_read, aligned_buf, to_copy);
+
+            if (cache_enabled) {
+                cache.write(fd, block_offset, static_cast<char*>(aligned_buf), bytesRead, false);
+            }
 
             total_read += to_copy;
             desc.position += to_copy;
@@ -153,7 +156,7 @@ ssize_t lab2_write(lab2_fd fd, const void* buf, size_t count) {
     FileDescriptor& desc = it->second;
     size_t total_written = 0;
     if (cache_enabled) {
-        total_written = cache.write(fd, desc.position, static_cast<const char*>(buf), count);
+        total_written = cache.write(fd, desc.position, static_cast<const char*>(buf), count, true);
         // Обновляем позицию в таблице файлов
         desc.position += total_written;
     } else {

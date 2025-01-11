@@ -61,7 +61,7 @@ size_t LRUCache::read(int fd, size_t offset, char* buf, size_t size) {
 
 
 // Запись данных в кэш
-size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size) {
+size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size, bool dirty) {
     size_t total_written = 0;
 
     while (total_written < size) {
@@ -74,14 +74,12 @@ size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size) {
                 fd,
                 block_offset,
                 std::vector<char>(SECTOR_SIZE, 0),
-                true
+                dirty
             };
-
-
             used_ += SECTOR_SIZE;
         } else {
             entry = &(*it->second);
-            entry->dirty = true;
+            entry->dirty = dirty;
         }
 
         size_t block_pos = offset % SECTOR_SIZE;
