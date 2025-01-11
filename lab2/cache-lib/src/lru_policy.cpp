@@ -103,6 +103,10 @@ size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size, bool
             cache_list_.push_front(*entry);
             cache_map_[{fd, block_offset}] = cache_list_.begin();
         }
+        else {
+            // Перемещаем существующий блок в начало списка
+            cache_list_.splice(cache_list_.begin(), cache_list_, it->second);
+        }
 
         total_written += to_write;
         offset += to_write;
