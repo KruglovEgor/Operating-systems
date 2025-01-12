@@ -35,13 +35,13 @@ size_t LRUCache::read(int fd, size_t offset, char* buf, size_t size) {
     size_t total_read = 0;
 
     while (total_read < size) {
-        size_t block_offset = offset / SECTOR_SIZE * SECTOR_SIZE;
+        size_t block_offset = offset / BLOCK_SIZE * BLOCK_SIZE;
         auto it = cache_map_.find({fd, block_offset});
 
         if (it != cache_map_.end()) {
             CacheEntry& entry = *it->second;
-            size_t block_pos = offset % SECTOR_SIZE;
-            size_t to_copy = min(size - total_read, SECTOR_SIZE - block_pos);
+            size_t block_pos = offset % BLOCK_SIZE;
+            size_t to_copy = min(size - total_read, BLOCK_SIZE - block_pos);
 
             std::memcpy(buf + total_read, &entry.data[block_pos], to_copy);
 
@@ -65,7 +65,7 @@ size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size, bool
     size_t total_written = 0;
 
     while (total_written < size) {
-        size_t block_offset = offset / SECTOR_SIZE * SECTOR_SIZE;
+        size_t block_offset = offset / BLOCK_SIZE * BLOCK_SIZE;
         auto it = cache_map_.find({fd, block_offset});
         CacheEntry* entry;
 
@@ -73,17 +73,17 @@ size_t LRUCache::write(int fd, size_t offset, const char* buf, size_t size, bool
             entry = new CacheEntry{
                 fd,
                 block_offset,
-                std::vector<char>(SECTOR_SIZE, 0),
+                std::vector<char>(BLOCK_SIZE, 0),
                 dirty
             };
-            used_ += SECTOR_SIZE;
+            used_ += BLOCK_SIZE;
         } else {
             entry = &(*it->second);
             entry->dirty = dirty;
         }
 
-        size_t block_pos = offset % SECTOR_SIZE;
-        size_t to_write = min(size - total_written, SECTOR_SIZE - block_pos);
+        size_t block_pos = offset % BLOCK_SIZE;
+        size_t to_write = min(size - total_written, BLOCK_SIZE - block_pos);
 
         // std::cout << "Copying to cache: ";
         // for (size_t i = 0; i < to_write; ++i) {

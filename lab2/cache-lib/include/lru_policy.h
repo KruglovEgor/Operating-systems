@@ -19,8 +19,8 @@ namespace std {
     };
 }
 
-
-#define SECTOR_SIZE 4096
+#define CAPACITY (4*1024*1024)
+#define BLOCK_SIZE (12*1024)
 
 typedef HANDLE (*GetHandleCallback)(int fd);
 

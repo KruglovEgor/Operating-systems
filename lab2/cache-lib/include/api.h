@@ -15,6 +15,9 @@
 #define CACHE_API __declspec(dllimport)
 #endif
 
+
+#define SECTOR_SIZE (2*1024)
+
 // Define the file descriptor type
 typedef int lab2_fd;
 
