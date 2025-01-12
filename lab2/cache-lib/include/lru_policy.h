@@ -19,9 +19,8 @@ namespace std {
     };
 }
 
-// Размер сектора для работы с `FILE_FLAG_NO_BUFFERING`
-// constexpr size_t SECTOR_SIZE = 512;
-#define SECTOR_SIZE 2048
+
+#define SECTOR_SIZE 4096
 
 typedef HANDLE (*GetHandleCallback)(int fd);
 

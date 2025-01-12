@@ -28,7 +28,7 @@ static HANDLE get_file_handle(int fd) {
 }
 
 
-static LRUCache cache(2048 * 1024, get_file_handle); // 2 MB cache for example
+static LRUCache cache(4 * 1024 * 1024, get_file_handle); // 4 MB cache for example
 
 // Вспомогательная функция для выделения выровненной памяти
 void* aligned_alloc(size_t alignment, size_t size) {
